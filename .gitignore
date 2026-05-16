@@ -1,0 +1,11 @@
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/tfplan
+**/terraform.tfvars
+**/*.backup
+**/crash.log
+**/crash.*.log
+.aws/
+*.pem
+*.key
