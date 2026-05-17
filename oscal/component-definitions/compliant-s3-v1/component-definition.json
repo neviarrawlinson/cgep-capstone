@@ -1,0 +1,168 @@
+{
+  "component-definition": {
+    "uuid": "11ff9f7b-9976-452a-8618-f73a2bc7b3fe",
+    "metadata": {
+      "title": "compliant-s3 module v1",
+      "last-modified": "2026-05-17T22:22:27.325186+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.1",
+      "parties": [
+        {
+          "uuid": "7afff7f2-3889-4f69-bf0d-92fe60b71ab2",
+          "type": "organization",
+          "name": "CGE-P Capstone Portfolio"
+        }
+      ]
+    },
+    "components": [
+      {
+        "uuid": "2786ddd3-e471-4ac3-a68f-77f33a86d517",
+        "type": "software",
+        "title": "compliant-s3",
+        "description": "Reusable Terraform primitive for an AWS S3 primary bucket plus a dedicated access-log bucket. The primitive enforces server-side encryption, versioning, public access blocking, access logging, and required compliance tags.",
+        "purpose": "Provide a compliant-by-default AWS S3 storage primitive that can be evaluated through policy-as-code and linked to signed evidence.",
+        "responsible-roles": [
+          {
+            "role-id": "provider",
+            "party-uuids": [
+              "7afff7f2-3889-4f69-bf0d-92fe60b71ab2"
+            ]
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "b138337f-e8d7-43d2-ad39-844ec5bec52c",
+            "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json",
+            "description": "Implementation of selected NIST SP 800-53 Rev 5 controls satisfied by the compliant-s3 Terraform primitive.",
+            "implemented-requirements": [
+              {
+                "uuid": "2c939854-0d94-440d-a146-6edde2d7a599",
+                "control-id": "sc-28",
+                "description": "The compliant-s3 Terraform primitive protects information at rest by using server-side encryption with a customer-managed AWS KMS key for the primary S3 bucket.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_server_side_encryption_configuration.primary"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_kms_key.s3"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/evidence-26003532929-f9387231dadcd5c4b3131a2d33db401234e25ff4.tar.gz",
+                    "text": "Signed workflow evidence bundle for SC-28 implementation evidence."
+                  },
+                  {
+                    "rel": "evidence-receipt",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/receipt.json",
+                    "text": "S3 evidence vault receipt for run 26003532929, SHA-256 ab00b280bbb70836549095f90fe2f8ce344b7901219819626ef7092ce38cde2d."
+                  }
+                ]
+              },
+              {
+                "uuid": "9b50c4cd-cf18-4693-abfa-7609527ac2ec",
+                "control-id": "ac-3",
+                "description": "The compliant-s3 Terraform primitive enforces access control by blocking public access paths on the primary and log buckets.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_public_access_block.primary"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_public_access_block.logs"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/evidence-26003532929-f9387231dadcd5c4b3131a2d33db401234e25ff4.tar.gz",
+                    "text": "Signed workflow evidence bundle for AC-3 implementation evidence."
+                  },
+                  {
+                    "rel": "evidence-receipt",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/receipt.json",
+                    "text": "S3 evidence vault receipt for run 26003532929, SHA-256 ab00b280bbb70836549095f90fe2f8ce344b7901219819626ef7092ce38cde2d."
+                  }
+                ]
+              },
+              {
+                "uuid": "2887e85f-9a02-47d2-9f6a-881bfcd3f8c7",
+                "control-id": "au-3",
+                "description": "The compliant-s3 Terraform primitive supports audit record generation by enabling S3 server access logging to a dedicated log bucket.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_logging.primary"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket.logs"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/evidence-26003532929-f9387231dadcd5c4b3131a2d33db401234e25ff4.tar.gz",
+                    "text": "Signed workflow evidence bundle for AU-3 implementation evidence."
+                  },
+                  {
+                    "rel": "evidence-receipt",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/receipt.json",
+                    "text": "S3 evidence vault receipt for run 26003532929, SHA-256 ab00b280bbb70836549095f90fe2f8ce344b7901219819626ef7092ce38cde2d."
+                  }
+                ]
+              },
+              {
+                "uuid": "de177648-585e-4e99-9533-8cab3c855db1",
+                "control-id": "cm-6",
+                "description": "The compliant-s3 Terraform primitive enforces baseline configuration settings through version-controlled Terraform resources and required compliance tags.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "terraform-path",
+                    "value": "terraform/primitives/compliant-s3"
+                  },
+                  {
+                    "name": "required-tags",
+                    "value": "Project, Environment, ManagedBy, ComplianceScope"
+                  }
+                ],
+                "links": [
+                  {
+                    "rel": "evidence",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/evidence-26003532929-f9387231dadcd5c4b3131a2d33db401234e25ff4.tar.gz",
+                    "text": "Signed workflow evidence bundle for CM-6 implementation evidence."
+                  },
+                  {
+                    "rel": "evidence-receipt",
+                    "href": "s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/receipt.json",
+                    "text": "S3 evidence vault receipt for run 26003532929, SHA-256 ab00b280bbb70836549095f90fe2f8ce344b7901219819626ef7092ce38cde2d."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

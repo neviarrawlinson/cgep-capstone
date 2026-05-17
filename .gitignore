@@ -12,3 +12,4 @@
 
 # Downloaded GitHub Actions evidence artifacts
 evidence-run-*/
+.venv/
