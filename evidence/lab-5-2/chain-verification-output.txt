@@ -1,0 +1,8 @@
+=== 1. Integrity (SHA-256) ===
+  OK (5ec4e2306e0c6ea83c90607142b1b0ace4d011ea669c59457e80fdc107894543)
+=== 2. Authenticity + timestamp (Cosign + Sigstore Rekor) ===
+Verified OK
+  OK (Cosign verified)
+=== 3. Preservation (Object Lock retention) ===
+  OK (retain until 2026-05-18T19:29:32.965000+00:00)
+CHAIN INTACT for run 26000498077
