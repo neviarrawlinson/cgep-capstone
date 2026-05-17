@@ -1,6 +1,6 @@
 # CGE-P Capstone Portfolio
 
-This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, AWS security services baselines, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
+This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, AWS and GCP security services baselines, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
 
 The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, enforcing compliance checks through automated pipelines, and preserving signed evidence with verifiable chain of custody.
 
@@ -23,11 +23,14 @@ This repository focuses on the intersection of:
 - Cross-cloud compliance validation
 - GitHub Actions evidence pipelines
 - AWS OIDC authentication for CI workflows
+- GCP Workload Identity Federation
 - AWS security services baselines
+- GCP security services baselines
 - CloudTrail audit logging
 - Security Hub standards monitoring
+- GCP Data Access audit logging
 
-The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, AWS security services, and version-controlled technical artifacts.
+The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, AWS security services, GCP security services, and version-controlled technical artifacts.
 
 ## Repository Structure
 
@@ -35,6 +38,7 @@ The labs in this repository show how compliance expectations can be embedded dir
 cgep-capstone/
 ├── .github/
 │   └── workflows/
+│       ├── gcp-wif-demo.yml
 │       └── grc-gate.yml
 ├── evidence/
 │   ├── lab-2-3/
@@ -49,23 +53,36 @@ cgep-capstone/
 │   ├── lab-3-3/
 │   │   └── opa-test-results.json
 │   ├── lab-3-4/
-│   │   ├── conftest-pass.json
-│   │   └── conftest-fail.json
+│   │   ├── conftest-fail.json
+│   │   └── conftest-pass.json
 │   ├── lab-4-4/
 │   │   ├── receipt.json
 │   │   ├── vault-listing.txt
 │   │   └── verification-output.txt
-│   └── lab-5-2/
+│   ├── lab-5-2/
+│   │   ├── chain-receipt.json
+│   │   ├── chain-verification-output.txt
+│   │   ├── cloudtrail-status.json
+│   │   ├── enabled-standards.json
+│   │   ├── security-hub-describe.json
+│   │   ├── security-hub-findings.json
+│   │   ├── security-hub-findings-summary.json
+│   │   ├── security-hub-status-note.md
+│   │   ├── terraform-outputs.json
+│   │   └── vault-listing.txt
+│   └── lab-5-4/
+│       ├── audit-configs.json
 │       ├── chain-receipt.json
 │       ├── chain-verification-output.txt
-│       ├── cloudtrail-status.json
-│       ├── enabled-standards.json
-│       ├── security-hub-describe.json
-│       ├── security-hub-findings.json
-│       ├── security-hub-findings-summary.json
-│       ├── security-hub-status-note.md
+│       ├── iam-policy.json
+│       ├── org-policies-list.json
+│       ├── org-policy-permission-note.md
+│       ├── service-account-keys-status.txt
+│       ├── service-account.json
 │       ├── terraform-outputs.json
-│       └── vault-listing.txt
+│       ├── vault-listing.txt
+│       ├── wif-pools.json
+│       └── wif-providers.json
 ├── oidc/
 │   ├── .terraform.lock.hcl
 │   ├── README.md
@@ -90,14 +107,23 @@ cgep-capstone/
 │   └── verify-evidence.sh
 ├── terraform/
 │   ├── baselines/
-│   │   └── aws/
+│   │   ├── aws/
+│   │   │   ├── .terraform.lock.hcl
+│   │   │   ├── README.md
+│   │   │   ├── cloudtrail.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── security_hub.tf
+│   │   │   └── variables.tf
+│   │   └── gcp/
 │   │       ├── .terraform.lock.hcl
 │   │       ├── README.md
-│   │       ├── cloudtrail.tf
+│   │       ├── audit_logs.tf
 │   │       ├── main.tf
+│   │       ├── org_policy.tf
 │   │       ├── outputs.tf
-│   │       ├── security_hub.tf
-│   │       └── variables.tf
+│   │       ├── variables.tf
+│   │       └── wif.tf
 │   ├── lab-3-3/
 │   │   ├── .terraform.lock.hcl
 │   │   └── main.tf
@@ -108,14 +134,14 @@ cgep-capstone/
 │   │       ├── outputs.tf
 │   │       └── variables.tf
 │   └── primitives/
+│       ├── compliant-gcs/
+│       │   ├── README.md
+│       │   └── main.tf
 │       ├── compliant-s3/
 │       │   ├── README.md
 │       │   ├── main.tf
 │       │   ├── outputs.tf
 │       │   └── variables.tf
-│       ├── compliant-gcs/
-│       │   ├── README.md
-│       │   └── main.tf
 │       └── evidence-vault/
 │           ├── README.md
 │           ├── main.tf
@@ -137,6 +163,7 @@ cgep-capstone/
 | Lab 4.3 | GRC Evidence Pipeline | GitHub Actions, AWS OIDC, Terraform Plan, Conftest, tfsec, Evidence Artifacts | Complete |
 | Lab 4.4 | Evidence Management and Chain of Custody | Cosign Signing, S3 Vault Upload, Receipt Generation, Chain Verification | Complete |
 | Lab 5.2 | AWS Security Services Baseline | CloudTrail, Security Hub, Enabled Standards, AWS Config Status Evidence, Signed Evidence Verification | Complete |
+| Lab 5.4 | GCP Security Services Baseline | Workload Identity Federation, Data Access Audit Logs, Org Policy Permission Evidence, Signed Evidence Verification | Complete |
 
 ## Lab 2.3: Building Your First Compliant Resource, AWS S3
 
@@ -664,6 +691,175 @@ Result: Passed
 Merged into: main
 ```
 
+## Lab 5.4: GCP Security Services Baseline
+
+Lab 5.4 deploys a GCP-native security services baseline using Terraform. The baseline focuses on identity-first security controls, keyless workload authentication, Data Access audit logging, and documentation of Org Policy enforcement requirements.
+
+The lab demonstrates how GRC Engineering can use GCP-native controls to reduce reliance on static service account keys, capture access evidence for sensitive services, and document permission boundaries when organization-level controls require elevated administrative rights.
+
+### Baseline Location
+
+```text
+terraform/baselines/gcp/
+```
+
+### Services and Controls
+
+| Area | Implementation | Evidence Value |
+|---|---|---|
+| Workload Identity Federation | Creates a GitHub Actions workload identity pool and OIDC provider | Enables keyless CI authentication without service account JSON keys |
+| Service Account | Creates a GRC gate service account for GitHub Actions | Provides a controlled identity for automation |
+| IAM Binding | Grants Workload Identity User binding for the approved GitHub repository | Restricts federation to `neviarrawlinson/cgep-capstone` |
+| Project Viewer Binding | Grants read-only project visibility to the GRC gate service account | Supports least-privilege verification activity |
+| Data Access Audit Logs | Enables `ADMIN_READ`, `DATA_READ`, and `DATA_WRITE` logs for Storage, KMS, and IAM | Captures audit evidence for sensitive GCP services |
+| Org Policy | Defined as optional Terraform resources | Documented as permission-limited in the sandbox |
+
+### Intended Org Policies
+
+The Terraform baseline includes optional project-level Org Policy resources for the following constraints:
+
+```text
+storage.uniformBucketLevelAccess
+iam.disableServiceAccountKeyCreation
+compute.requireOsLogin
+```
+
+In this sandbox, Org Policy enforcement was not applied because the active account does not have the required `orgpolicy.policies.create` permission. The Terraform output records this as:
+
+```text
+org_policy_status = "not_applied_permission_limited"
+org_policies_enforced = []
+```
+
+This limitation is documented as evidence in:
+
+```text
+evidence/lab-5-4/org-policy-permission-note.md
+```
+
+### Workload Identity Federation
+
+The baseline creates a Workload Identity Federation configuration for GitHub Actions.
+
+```text
+workload_identity_pool_name = projects/277725014630/locations/global/workloadIdentityPools/github-actions
+workload_identity_provider_name = projects/277725014630/locations/global/workloadIdentityPools/github-actions/providers/github
+service_account_email = cgep-grc-gate-sa@cge-p-sandbox.iam.gserviceaccount.com
+github_repository_condition = neviarrawlinson/cgep-capstone
+```
+
+A demo workflow was added to show how GitHub Actions can authenticate to GCP without storing or using a long-lived service account JSON key.
+
+```text
+.github/workflows/gcp-wif-demo.yml
+```
+
+### Data Access Audit Logs
+
+Data Access audit logging was enabled for:
+
+```text
+storage.googleapis.com
+cloudkms.googleapis.com
+iam.googleapis.com
+```
+
+Each service was configured with:
+
+```text
+ADMIN_READ
+DATA_READ
+DATA_WRITE
+```
+
+The focused audit configuration evidence is captured in:
+
+```text
+evidence/lab-5-4/audit-configs.json
+```
+
+### Terraform Resources
+
+The baseline creates and manages:
+
+```text
+google_iam_workload_identity_pool.github
+google_iam_workload_identity_pool_provider.github
+google_project_iam_audit_config.iam
+google_project_iam_audit_config.kms
+google_project_iam_audit_config.storage
+google_project_iam_member.grc_gate_viewer
+google_service_account.grc_gate
+google_service_account_iam_binding.wif_user
+```
+
+The following Org Policy resources are defined but disabled by default because they require elevated Org Policy permissions:
+
+```text
+google_org_policy_policy.disable_service_account_keys
+google_org_policy_policy.require_os_login
+google_org_policy_policy.uniform_bucket_access
+```
+
+### Evidence Artifacts
+
+```text
+evidence/lab-5-4/audit-configs.json
+evidence/lab-5-4/iam-policy.json
+evidence/lab-5-4/org-policies-list.json
+evidence/lab-5-4/org-policy-permission-note.md
+evidence/lab-5-4/service-account-keys-status.txt
+evidence/lab-5-4/service-account.json
+evidence/lab-5-4/terraform-outputs.json
+evidence/lab-5-4/wif-pools.json
+evidence/lab-5-4/wif-providers.json
+```
+
+### Service Account Key Status
+
+The final service account key evidence confirms that no user-managed JSON keys remain for the GRC gate service account.
+
+```text
+User-managed service account key status:
+
+Listed 0 items.
+
+This confirms there are no user-managed JSON keys remaining for:
+cgep-grc-gate-sa@cge-p-sandbox.iam.gserviceaccount.com
+```
+
+### Signed Evidence Verification
+
+The Lab 5.4 workflow evidence was bundled, signed with Cosign, uploaded to the immutable S3 evidence vault, and independently verified.
+
+```text
+evidence/lab-5-4/chain-receipt.json
+evidence/lab-5-4/vault-listing.txt
+evidence/lab-5-4/chain-verification-output.txt
+```
+
+Verification result:
+
+```text
+=== 1. Integrity (SHA-256) ===
+  OK
+=== 2. Authenticity + timestamp (Cosign + Sigstore Rekor) ===
+Verified OK
+  OK (Cosign verified)
+=== 3. Preservation (Object Lock retention) ===
+  OK
+CHAIN INTACT for run 26003532929
+```
+
+### Pull Request Outcome
+
+```text
+Pull request: #4
+Workflow: grc-gate
+Result: Passed
+Merged into: main
+```
+
 ## Policy Library Summary
 
 The policy library currently supports both GCP and AWS coverage for core compliance controls.
@@ -678,7 +874,7 @@ The policy library currently supports both GCP and AWS coverage for core complia
 
 This repository demonstrates a shift from manual compliance evidence to automated, machine-readable, cryptographically verifiable evidence.
 
-Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore and Rekor transparency records, S3 Object Lock retention, CloudTrail service status, Security Hub enabled standards, and AWS service evidence files to create evidence that is more repeatable, verifiable, and resistant to silent modification.
+Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore and Rekor transparency records, S3 Object Lock retention, CloudTrail service status, Security Hub enabled standards, GCP Data Access audit logs, Workload Identity Federation evidence, and cloud service evidence files to create evidence that is more repeatable, verifiable, and resistant to silent modification.
 
 The evidence approach in this repository is based on five principles:
 
@@ -704,8 +900,12 @@ This portfolio uses:
 - AWS KMS
 - AWS CloudTrail
 - AWS Security Hub
+- Google Cloud IAM
+- Google Cloud Workload Identity Federation
+- Google Cloud Audit Logs
 - Google Cloud Storage
 - Google Cloud KMS
+- Google Cloud Org Policy
 - Open Policy Agent
 - Rego
 - Conftest
@@ -740,6 +940,7 @@ This repository demonstrates the ability to:
 - Use Conftest as a fail-closed policy gate
 - Integrate policy-as-code checks into GitHub Actions
 - Configure AWS OIDC for keyless CI authentication
+- Configure GCP Workload Identity Federation for keyless CI authentication
 - Run static Terraform security scanning with tfsec
 - Generate SARIF security scan evidence
 - Upload workflow evidence artifacts for audit review
@@ -755,6 +956,12 @@ This repository demonstrates the ability to:
 - Capture CloudTrail status as evidence
 - Capture Security Hub hub status, enabled standards, and findings as evidence
 - Document AWS Config dependency status for Security Hub standards
+- Build GCP security service baselines with Terraform
+- Enable GCP Data Access audit logs for Storage, KMS, and IAM
+- Create GCP Workload Identity Federation pools and providers
+- Restrict WIF authentication to an approved GitHub repository
+- Document GCP Org Policy permission boundaries as audit evidence
+- Confirm service account JSON keys are not retained
 - Capture pass and fail evidence for CI and audit workflows
 - Remediate pipeline findings by improving Terraform controls
 - Structure technical artifacts for audit readiness
@@ -810,7 +1017,12 @@ This helps prevent accidental exposure of Terraform state, local variable files,
 | Security Hub enabled standards evidence | Complete |
 | AWS Config status documentation | Complete |
 | Lab 5.2 signed evidence verification | Complete |
-| GitHub portfolio structure | Complete through Lab 5.2 |
+| GCP security services baseline | Complete |
+| GCP Workload Identity Federation | Complete |
+| GCP Data Access audit logs | Complete |
+| GCP Org Policy permission evidence | Complete |
+| Lab 5.4 signed evidence verification | Complete |
+| GitHub portfolio structure | Complete through Lab 5.4 |
 
 ## Next Steps
 
