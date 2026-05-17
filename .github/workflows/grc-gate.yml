@@ -47,19 +47,63 @@ jobs:
           sudo install /tmp/tfsec /usr/local/bin/tfsec
           tfsec --version
 
-      - name: Terraform plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          terraform init -input=false
-          terraform validate
-          terraform plan -out=tfplan -no-color -var="project_name=cgep-lab" -var="environment=dev" | tee plan.txt
-          terraform show -json tfplan > plan.json
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
 
-      - name: Conftest policy gate
-        id: conftest
+      - name: Terraform plan
         if: always()
         run: |
-          mkdir -p evidence
+          set +e
+
+          mkdir -p evidence/status
+          TF_STATUS=0
+
+          pushd "${TF_WORKING_DIR}"
+
+          terraform init -input=false
+          INIT_STATUS=$?
+          if [[ ${INIT_STATUS} -ne 0 ]]; then
+            TF_STATUS=${INIT_STATUS}
+          fi
+
+          if [[ ${TF_STATUS} -eq 0 ]]; then
+            terraform validate
+            VALIDATE_STATUS=$?
+            if [[ ${VALIDATE_STATUS} -ne 0 ]]; then
+              TF_STATUS=${VALIDATE_STATUS}
+            fi
+          fi
+
+          if [[ ${TF_STATUS} -eq 0 ]]; then
+            terraform plan -out=tfplan -no-color -var="project_name=cgep-lab" -var="environment=dev" | tee plan.txt
+            PLAN_STATUS=${PIPESTATUS[0]}
+            if [[ ${PLAN_STATUS} -ne 0 ]]; then
+              TF_STATUS=${PLAN_STATUS}
+            fi
+          else
+            touch plan.txt
+          fi
+
+          if [[ -f tfplan ]]; then
+            terraform show -json tfplan > plan.json
+          else
+            echo "{}" > plan.json
+          fi
+
+          popd
+
+          echo "${TF_STATUS}" > evidence/status/terraform.exit
+          exit 0
+
+      - name: Conftest policy gate
+        if: always()
+        run: |
+          set +e
+
+          mkdir -p evidence/status
+          CONFTST_STATUS=0
 
           {
             echo "["
@@ -98,11 +142,16 @@ jobs:
           sys.exit(0 if failures == 0 else 1)
           PY
 
+          CONFTST_STATUS=$?
+          echo "${CONFTST_STATUS}" > evidence/status/conftest.exit
+          exit 0
+
       - name: tfsec scan
-        id: tfsec
         if: always()
         run: |
-          mkdir -p evidence
+          set +e
+
+          mkdir -p evidence/status
 
           tfsec "${TF_WORKING_DIR}" --format sarif --out evidence/tfsec.sarif || true
 
@@ -124,11 +173,68 @@ jobs:
           sys.exit(0 if high == 0 else 1)
           PY
 
+          TFSEC_STATUS=$?
+          echo "${TFSEC_STATUS}" > evidence/status/tfsec.exit
+          exit 0
+
       - name: Copy Terraform plan into evidence
         if: always()
         run: |
           cp "${TF_WORKING_DIR}/plan.json" evidence/plan.json
           cp "${TF_WORKING_DIR}/plan.txt" evidence/plan.txt
+
+      - name: Bundle, sign, and upload evidence to vault
+        id: sign
+        if: always()
+        env:
+          VAULT: ${{ vars.EVIDENCE_VAULT }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${VAULT}" ]]; then
+            echo "EVIDENCE_VAULT repo variable is not set"
+            exit 1
+          fi
+
+          BUNDLE="evidence-${RUN_ID}-${SHA}.tar.gz"
+
+          tar -czf "${BUNDLE}" evidence
+          sha256sum "${BUNDLE}" | awk '{print $1}' > "${BUNDLE}.sha256"
+
+          cosign sign-blob --yes --bundle "${BUNDLE}.sig.bundle" "${BUNDLE}"
+
+          KEY_PREFIX="runs/${RUN_ID}"
+
+          aws s3 cp "${BUNDLE}"            "s3://${VAULT}/${KEY_PREFIX}/${BUNDLE}"
+          aws s3 cp "${BUNDLE}.sha256"     "s3://${VAULT}/${KEY_PREFIX}/${BUNDLE}.sha256"
+          aws s3 cp "${BUNDLE}.sig.bundle" "s3://${VAULT}/${KEY_PREFIX}/${BUNDLE}.sig.bundle"
+
+          VERSION_ID=$(aws s3api head-object \
+            --bucket "${VAULT}" \
+            --key "${KEY_PREFIX}/${BUNDLE}" \
+            --query VersionId \
+            --output text)
+
+          cat > receipt.json <<EOF
+          {
+            "run_id": "${RUN_ID}",
+            "vault": "${VAULT}",
+            "bundle_key": "${KEY_PREFIX}/${BUNDLE}",
+            "version_id": "${VERSION_ID}",
+            "sha256": "$(cat ${BUNDLE}.sha256)",
+            "commit": "${SHA}",
+            "workflow": "grc-gate"
+          }
+          EOF
+
+          aws s3 cp receipt.json "s3://${VAULT}/${KEY_PREFIX}/receipt.json"
+
+          cp "${BUNDLE}" evidence/
+          cp "${BUNDLE}.sha256" evidence/
+          cp "${BUNDLE}.sig.bundle" evidence/
+          cp receipt.json evidence/receipt.json
 
       - name: Upload GRC evidence artifact
         if: always()
@@ -137,3 +243,23 @@ jobs:
           name: grc-evidence-${{ github.run_id }}
           path: evidence/
           retention-days: 90
+
+      - name: Evaluate gate outcome
+        if: always()
+        run: |
+          set -euo pipefail
+
+          TF_STATUS=$(cat evidence/status/terraform.exit)
+          CONFTST_STATUS=$(cat evidence/status/conftest.exit)
+          TFSEC_STATUS=$(cat evidence/status/tfsec.exit)
+
+          echo "terraform status: ${TF_STATUS}"
+          echo "conftest status: ${CONFTST_STATUS}"
+          echo "tfsec status: ${TFSEC_STATUS}"
+
+          if [[ "${TF_STATUS}" != "0" || "${CONFTST_STATUS}" != "0" || "${TFSEC_STATUS}" != "0" ]]; then
+            echo "GRC gate failed. Evidence was still signed and uploaded."
+            exit 1
+          fi
+
+          echo "GRC gate passed. Evidence chain preserved."

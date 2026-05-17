@@ -9,3 +9,6 @@
 .aws/
 *.pem
 *.key
+
+# Downloaded GitHub Actions evidence artifacts
+evidence-run-*/

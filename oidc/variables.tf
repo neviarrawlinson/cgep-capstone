@@ -19,3 +19,9 @@ variable "role_name" {
   description = "IAM role name for the GitHub Actions GRC gate."
   default     = "cgep-grc-gate"
 }
+
+variable "evidence_vault_bucket" {
+  type        = string
+  description = "S3 evidence vault bucket that the GitHub Actions role can write signed evidence bundles to."
+  default     = ""
+}
