@@ -39,6 +39,16 @@ locals {
   log_name         = "${var.project_name}-${var.environment}-logs-${local.effective_suffix}"
 }
 
+resource "aws_kms_key" "s3" {
+  description             = "CGE-P Lab S3 customer managed encryption key"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+}
+
+resource "aws_kms_alias" "s3" {
+  name          = "alias/${var.project_name}-${var.environment}-s3"
+  target_key_id = aws_kms_key.s3.key_id
+}
 resource "aws_s3_bucket" "primary" {
   bucket = local.primary_name
 }
@@ -49,7 +59,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "primary" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.s3.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
@@ -96,7 +107,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "log" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.s3.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
@@ -109,8 +121,16 @@ resource "aws_s3_bucket_public_access_block" "log" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_versioning" "log" {
+  bucket = aws_s3_bucket.log.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
 resource "aws_s3_bucket_logging" "primary" {
   bucket        = aws_s3_bucket.primary.id
   target_bucket = aws_s3_bucket.log.id
   target_prefix = "access-logs/"
 }
+
