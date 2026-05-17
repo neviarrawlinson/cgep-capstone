@@ -1,0 +1,10 @@
+Profile resolve completed successfully.
+
+Command used:
+trestle author profile-resolve --name cge-p-minimum -o cge-p-minimum-resolved -v
+
+Resolved profile output:
+oscal/catalogs/cge-p-minimum-resolved/catalog.json
+
+Note:
+Trestle v4 may complete profile resolution without printing console output. The resolved catalog file was created and validated separately in resolved-profile-validate.txt.
