@@ -1,8 +1,8 @@
 # CGE-P Capstone Portfolio
 
-This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, AWS and GCP security services baselines, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
+This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, AWS and GCP security services baselines, OSCAL artifacts, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
 
-The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, enforcing compliance checks through automated pipelines, and preserving signed evidence with verifiable chain of custody.
+The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, enforcing compliance checks through automated pipelines, documenting controls in OSCAL, and preserving signed evidence with verifiable chain of custody.
 
 ## Overview
 
@@ -29,8 +29,10 @@ This repository focuses on the intersection of:
 - CloudTrail audit logging
 - Security Hub standards monitoring
 - GCP Data Access audit logging
+- OSCAL component definitions
+- OSCAL profiles and resolved catalogs
 
-The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, AWS security services, GCP security services, and version-controlled technical artifacts.
+The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, AWS security services, GCP security services, OSCAL artifacts, and version-controlled technical documentation.
 
 ## Repository Structure
 
@@ -70,25 +72,46 @@ cgep-capstone/
 │   │   ├── security-hub-status-note.md
 │   │   ├── terraform-outputs.json
 │   │   └── vault-listing.txt
-│   └── lab-5-4/
-│       ├── audit-configs.json
+│   ├── lab-5-4/
+│   │   ├── audit-configs.json
+│   │   ├── chain-receipt.json
+│   │   ├── chain-verification-output.txt
+│   │   ├── iam-policy.json
+│   │   ├── org-policies-list.json
+│   │   ├── org-policy-permission-note.md
+│   │   ├── service-account-keys-status.txt
+│   │   ├── service-account.json
+│   │   ├── terraform-outputs.json
+│   │   ├── vault-listing.txt
+│   │   ├── wif-pools.json
+│   │   └── wif-providers.json
+│   └── lab-6-1/
 │       ├── chain-receipt.json
 │       ├── chain-verification-output.txt
-│       ├── iam-policy.json
-│       ├── org-policies-list.json
-│       ├── org-policy-permission-note.md
-│       ├── service-account-keys-status.txt
-│       ├── service-account.json
-│       ├── terraform-outputs.json
-│       ├── vault-listing.txt
-│       ├── wif-pools.json
-│       └── wif-providers.json
+│       ├── component-definition-validate.txt
+│       ├── component-evidence-links.json
+│       ├── profile-resolve.txt
+│       ├── profile-validate.txt
+│       ├── resolved-profile-validate.txt
+│       ├── trestle-version.txt
+│       └── vault-listing.txt
 ├── oidc/
 │   ├── .terraform.lock.hcl
 │   ├── README.md
 │   ├── main.tf
 │   ├── outputs.tf
 │   └── variables.tf
+├── oscal/
+│   ├── README.md
+│   ├── catalogs/
+│   │   └── cge-p-minimum-resolved/
+│   │       └── catalog.json
+│   ├── component-definitions/
+│   │   └── compliant-s3-v1/
+│   │       └── component-definition.json
+│   └── profiles/
+│       └── cge-p-minimum/
+│           └── profile.json
 ├── policies/
 │   ├── ac3_no_public.rego
 │   ├── ac3_no_public_aws.rego
@@ -103,6 +126,7 @@ cgep-capstone/
 │       └── sc28_encryption_test.rego
 ├── scripts/
 │   ├── capture-evidence.sh
+│   ├── generate-oscal-lab-6-1.py
 │   ├── policy-gate.sh
 │   └── verify-evidence.sh
 ├── terraform/
@@ -164,6 +188,7 @@ cgep-capstone/
 | Lab 4.4 | Evidence Management and Chain of Custody | Cosign Signing, S3 Vault Upload, Receipt Generation, Chain Verification | Complete |
 | Lab 5.2 | AWS Security Services Baseline | CloudTrail, Security Hub, Enabled Standards, AWS Config Status Evidence, Signed Evidence Verification | Complete |
 | Lab 5.4 | GCP Security Services Baseline | Workload Identity Federation, Data Access Audit Logs, Org Policy Permission Evidence, Signed Evidence Verification | Complete |
+| Lab 6.1 | Introduction to OSCAL | OSCAL Component Definition, Profile, Resolved Catalog, Evidence Links, Trestle Validation | Complete |
 
 ## Lab 2.3: Building Your First Compliant Resource, AWS S3
 
@@ -860,6 +885,123 @@ Result: Passed
 Merged into: main
 ```
 
+## Lab 6.1: Introduction to OSCAL
+
+Lab 6.1 adds the OSCAL layer to the capstone portfolio. OSCAL allows security controls, component implementations, profiles, and evidence references to be represented in a machine-readable format.
+
+This lab creates a valid OSCAL Component Definition for the `compliant-s3` Terraform primitive, a minimal OSCAL Profile selecting the implemented controls, and a resolved OSCAL catalog that an assessor can use to trace controls from the profile to the component and then to signed evidence in the S3 evidence vault.
+
+### OSCAL Location
+
+```text
+oscal/
+```
+
+### OSCAL Artifacts
+
+| Artifact | Location | Purpose |
+|---|---|---|
+| Component Definition | `oscal/component-definitions/compliant-s3-v1/component-definition.json` | Describes how the `compliant-s3` Terraform primitive implements selected controls |
+| Profile | `oscal/profiles/cge-p-minimum/profile.json` | Selects SC-28, AC-3, AU-3, and CM-6 from the NIST SP 800-53 Rev 5 catalog |
+| Resolved Catalog | `oscal/catalogs/cge-p-minimum-resolved/catalog.json` | Resolves the selected controls into a standalone OSCAL catalog |
+| OSCAL README | `oscal/README.md` | Explains the OSCAL structure and evidence chain |
+
+### Controls Modeled
+
+| Control | Implementation Summary | Evidence Link |
+|---|---|---|
+| SC-28 | S3 encryption at rest using a customer-managed AWS KMS key | Signed evidence bundle in S3 evidence vault |
+| AC-3 | S3 public access blocking for primary and log buckets | Signed evidence bundle in S3 evidence vault |
+| AU-3 | S3 server access logging to a dedicated log bucket | Signed evidence bundle in S3 evidence vault |
+| CM-6 | Version-controlled Terraform baseline with required compliance tags | Signed evidence bundle in S3 evidence vault |
+
+### Evidence Traversal
+
+The Component Definition links implemented requirements to signed evidence using OSCAL `links` with `rel=evidence`.
+
+The evidence URI points to the signed Lab 5.4 workflow evidence bundle in the S3 evidence vault:
+
+```text
+s3://cgep-lab-grc-evidence-vault-d3a7458a/runs/26003532929/evidence-26003532929-f9387231dadcd5c4b3131a2d33db401234e25ff4.tar.gz
+```
+
+The corresponding receipt is recorded in:
+
+```text
+evidence/lab-5-4/chain-receipt.json
+```
+
+### Trestle Validation
+
+The OSCAL artifacts were validated with compliance-trestle.
+
+```text
+Trestle version v4.0.2 based on OSCAL version 1.2.1
+```
+
+Validation evidence:
+
+```text
+evidence/lab-6-1/component-definition-validate.txt
+evidence/lab-6-1/profile-validate.txt
+evidence/lab-6-1/profile-resolve.txt
+evidence/lab-6-1/resolved-profile-validate.txt
+evidence/lab-6-1/trestle-version.txt
+```
+
+Validation results:
+
+```text
+Component Definition: VALID
+Profile: VALID
+Resolved Catalog: VALID
+```
+
+The resolved catalog validation produced a warning that some resource UUIDs are not referenced by the model, but the model still passed validation.
+
+### Evidence Artifacts
+
+```text
+evidence/lab-6-1/component-definition-validate.txt
+evidence/lab-6-1/component-evidence-links.json
+evidence/lab-6-1/profile-resolve.txt
+evidence/lab-6-1/profile-validate.txt
+evidence/lab-6-1/resolved-profile-validate.txt
+evidence/lab-6-1/trestle-version.txt
+```
+
+### Signed Evidence Verification
+
+The Lab 6.1 workflow evidence was bundled, signed with Cosign, uploaded to the immutable S3 evidence vault, and independently verified.
+
+```text
+evidence/lab-6-1/chain-receipt.json
+evidence/lab-6-1/vault-listing.txt
+evidence/lab-6-1/chain-verification-output.txt
+```
+
+Verification result:
+
+```text
+=== 1. Integrity (SHA-256) ===
+  OK
+=== 2. Authenticity + timestamp (Cosign + Sigstore Rekor) ===
+Verified OK
+  OK (Cosign verified)
+=== 3. Preservation (Object Lock retention) ===
+  OK
+CHAIN INTACT for run 26004946170
+```
+
+### Pull Request Outcome
+
+```text
+Pull request: #5
+Workflow: grc-gate
+Result: Passed
+Merged into: main
+```
+
 ## Policy Library Summary
 
 The policy library currently supports both GCP and AWS coverage for core compliance controls.
@@ -874,7 +1016,7 @@ The policy library currently supports both GCP and AWS coverage for core complia
 
 This repository demonstrates a shift from manual compliance evidence to automated, machine-readable, cryptographically verifiable evidence.
 
-Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore and Rekor transparency records, S3 Object Lock retention, CloudTrail service status, Security Hub enabled standards, GCP Data Access audit logs, Workload Identity Federation evidence, and cloud service evidence files to create evidence that is more repeatable, verifiable, and resistant to silent modification.
+Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore and Rekor transparency records, S3 Object Lock retention, CloudTrail service status, Security Hub enabled standards, GCP Data Access audit logs, Workload Identity Federation evidence, OSCAL Component Definitions, OSCAL Profiles, resolved OSCAL catalogs, and cloud service evidence files to create evidence that is more repeatable, verifiable, and resistant to silent modification.
 
 The evidence approach in this repository is based on five principles:
 
@@ -884,7 +1026,7 @@ The evidence approach in this repository is based on five principles:
 | Attribution | Evidence should show where it came from and what produced it |
 | Reproducibility | Evidence should allow reviewers to understand how the result was generated |
 | Enforceability | Evidence should show that controls can block non-compliant changes before deployment |
-| Verifiability | Evidence should be independently checked using hashes, signatures, receipts, and retention metadata |
+| Verifiability | Evidence should be independently checked using hashes, signatures, receipts, retention metadata, and OSCAL references |
 
 ## Tools and Technologies
 
@@ -914,6 +1056,9 @@ This portfolio uses:
 - Cosign
 - Sigstore
 - Rekor
+- OSCAL
+- compliance-trestle
+- Python
 - GitHub Actions
 - GitHub CLI
 - Git Bash
@@ -962,6 +1107,11 @@ This repository demonstrates the ability to:
 - Restrict WIF authentication to an approved GitHub repository
 - Document GCP Org Policy permission boundaries as audit evidence
 - Confirm service account JSON keys are not retained
+- Create OSCAL Component Definitions for Terraform-based controls
+- Create OSCAL Profiles selecting implemented controls
+- Resolve OSCAL Profiles into standalone catalogs
+- Validate OSCAL artifacts with compliance-trestle
+- Link OSCAL implemented requirements to signed evidence in an immutable vault
 - Capture pass and fail evidence for CI and audit workflows
 - Remediate pipeline findings by improving Terraform controls
 - Structure technical artifacts for audit readiness
@@ -984,9 +1134,11 @@ crash.*.log
 *.pem
 *.key
 evidence-run-*/
+.venv/
+oscal/.trestle/cache/
 ```
 
-This helps prevent accidental exposure of Terraform state, local variable files, credentials, private keys, local plan files, downloaded workflow artifacts, or environment-specific configuration.
+This helps prevent accidental exposure of Terraform state, local variable files, credentials, private keys, local plan files, downloaded workflow artifacts, Python virtual environments, Trestle cache files, or environment-specific configuration.
 
 ## Current Status
 
@@ -1022,10 +1174,15 @@ This helps prevent accidental exposure of Terraform state, local variable files,
 | GCP Data Access audit logs | Complete |
 | GCP Org Policy permission evidence | Complete |
 | Lab 5.4 signed evidence verification | Complete |
-| GitHub portfolio structure | Complete through Lab 5.4 |
+| OSCAL Component Definition | Complete |
+| OSCAL Profile | Complete |
+| OSCAL Resolved Catalog | Complete |
+| Trestle validation evidence | Complete |
+| Lab 6.1 signed evidence verification | Complete |
+| GitHub portfolio structure | Complete through Lab 6.1 |
 
 ## Next Steps
 
-Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing improvements, evidence packaging, workflow integration, OSCAL-aligned evidence references, cloud security service integrations, and stronger audit traceability.
+Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing improvements, evidence packaging, workflow integration, OSCAL-aligned evidence references, cloud security service integrations, system security plan modeling, and stronger audit traceability.
 
-The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, preserved when evaluated, signed when captured, and supported by durable evidence artifacts that can be independently verified.
+The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, preserved when evaluated, signed when captured, mapped to OSCAL, and supported by durable evidence artifacts that can be independently verified.
