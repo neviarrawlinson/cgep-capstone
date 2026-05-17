@@ -10,7 +10,7 @@ This directory contains Rego policies for evaluating Terraform plan JSON before 
 
 
 
-The policy library supports Lab 3.3 by validating Terraform plan output before deployment. The goal is to catch compliance issues early by evaluating infrastructure-as-code against control-aligned Rego policies.
+The policy library supports policy-as-code validation across cloud providers. The policies map technical infrastructure checks to NIST 800-53 control IDs and produce developer-readable deny messages with the control, resource, violation, and remediation guidance.
 
 
 
@@ -18,15 +18,21 @@ The policy library supports Lab 3.3 by validating Terraform plan output before d
 
 
 
-| Policy | Control | Severity | Purpose | Remediation |
+| Policy | Cloud | Control | Severity | Purpose | Remediation |
 
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 
-| sc28\_encryption.rego | SC-28 | High | Requires Google Cloud Storage buckets to use customer-managed encryption keys | Add an encryption block with default\_kms\_key\_name |
+| sc28\_encryption.rego | GCP | SC-28 | High | Requires Google Cloud Storage buckets to use customer-managed encryption keys | Add an encryption block with default\_kms\_key\_name |
 
-| ac3\_no\_public.rego | AC-3 | Critical | Prevents public GCS bucket access and public management-port firewall exposure | Enforce uniform bucket-level access, public access prevention, and narrow firewall source ranges |
+| ac3\_no\_public.rego | GCP | AC-3 | Critical | Prevents public GCS bucket access and public management-port firewall exposure | Enforce uniform bucket-level access, public access prevention, and narrow firewall source ranges |
 
-| cm6\_required\_tags.rego | CM-6 | Medium | Requires standard compliance labels on taggable resources | Add project, environment, managed\_by, and compliance\_scope labels |
+| cm6\_required\_tags.rego | GCP | CM-6 | Medium | Requires standard compliance labels on taggable GCP resources | Add project, environment, managed\_by, and compliance\_scope labels |
+
+| sc28\_encryption\_aws.rego | AWS | SC-28 | High | Requires every S3 bucket to have a matching server-side encryption configuration | Add aws\_s3\_bucket\_server\_side\_encryption\_configuration for the bucket |
+
+| ac3\_no\_public\_aws.rego | AWS | AC-3 | Critical | Requires every S3 bucket to have a complete public access block configuration | Add aws\_s3\_bucket\_public\_access\_block with all four flags set to true |
+
+| cm6\_required\_tags\_aws.rego | AWS | CM-6 | Medium | Requires standard compliance tags on taggable AWS resources | Add Project, Environment, ManagedBy, and ComplianceScope tags or use provider default\_tags |
 
 
 
@@ -34,61 +40,11 @@ The policy library supports Lab 3.3 by validating Terraform plan output before d
 
 
 
-Test results are stored in:
+Lab 3.3 OPA test evidence:
 
 
+
+```text
 
 evidence/lab-3-3/opa-test-results.json
-
-
-
-\## Usage
-
-
-
-Run all policy tests:
-
-
-
-opa test -v policies/
-
-
-
-Evaluate policies against the Terraform plan:
-
-
-
-opa eval -d policies -i terraform/lab-3-3/plan.json "data.compliance.sc28.deny" --format=pretty
-
-
-
-opa eval -d policies -i terraform/lab-3-3/plan.json "data.compliance.ac3.deny" --format=pretty
-
-
-
-opa eval -d policies -i terraform/lab-3-3/plan.json "data.compliance.cm6.deny" --format=pretty
-
-
-
-\## Controls Covered
-
-
-
-| Control | Description |
-
-|---|---|
-
-| SC-28 | Protection of information at rest |
-
-| AC-3 | Access enforcement |
-
-| CM-6 | Configuration settings |
-
-
-
-\## Notes
-
-
-
-These policies are written for Terraform plan JSON. They evaluate planned infrastructure before deployment and return developer-readable deny messages that include the control ID, resource address, and remediation guidance.
 
