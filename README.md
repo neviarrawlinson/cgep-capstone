@@ -1,8 +1,8 @@
 # CGE-P Capstone Portfolio
 
-This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, and supporting scripts completed as part of the GRC Engineering Academy CGE-P certification.
+This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, and CI/CD evidence pipeline work completed as part of the GRC Engineering Academy CGE-P certification.
 
-The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, and producing machine-readable evidence that can support audit, assurance, and control validation activities.
+The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, and enforcing compliance checks through automated pipelines.
 
 ## Overview
 
@@ -18,13 +18,18 @@ This repository focuses on the intersection of:
 - Secure evidence storage
 - CI-ready policy gates
 - Cross-cloud compliance validation
+- GitHub Actions evidence pipelines
+- AWS OIDC authentication for CI workflows
 
-The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, and version-controlled technical artifacts.
+The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, and version-controlled technical artifacts.
 
 ## Repository Structure
 
 ```text
 cgep-capstone/
+├── .github/
+│   └── workflows/
+│       └── grc-gate.yml
 ├── evidence/
 │   ├── lab-2-3/
 │   │   ├── plan.json
@@ -40,6 +45,12 @@ cgep-capstone/
 │   └── lab-3-4/
 │       ├── conftest-pass.json
 │       └── conftest-fail.json
+├── oidc/
+│   ├── .terraform.lock.hcl
+│   ├── README.md
+│   ├── main.tf
+│   ├── outputs.tf
+│   └── variables.tf
 ├── policies/
 │   ├── ac3_no_public.rego
 │   ├── ac3_no_public_aws.rego
@@ -92,16 +103,20 @@ cgep-capstone/
 | Lab 2.5 | IaC as Compliance Evidence, AWS | Immutable Evidence and Chain of Custody | Complete |
 | Lab 3.3 | Writing Compliance Policies in Rego, GCP | OPA and Rego Policy as Code | Complete |
 | Lab 3.4 | Integrating PaC with Terraform via Conftest, AWS | Conftest Policy Gate | Complete |
+| Lab 4.3 | GRC Evidence Pipeline | GitHub Actions, AWS OIDC, Terraform Plan, Conftest, tfsec, Evidence Artifacts | Complete |
 
 ## Lab 2.3: Building Your First Compliant Resource, AWS S3
 
 Lab 2.3 builds a compliant AWS S3 storage primitive using Terraform. The implementation creates a primary S3 bucket and a dedicated log bucket with baseline security and compliance controls enforced through code.
 
+The original Lab 2.3 implementation used AES-256 server-side encryption. During Lab 4.3, the S3 primitive was enhanced to use a customer-managed AWS KMS key so that tfsec and the CI security gate could validate stronger encryption coverage.
+
 ### Control Implementation Summary
 
 | Control | Control Objective | Technical Implementation |
 |---|---|---|
-| SC-28 | Protect information at rest | Enables AES-256 server-side encryption on the primary S3 bucket |
+| SC-28 | Protect information at rest | Enables server-side encryption using a customer-managed AWS KMS key |
+| SC-12 | Cryptographic key establishment and management | Creates an AWS KMS key with key rotation enabled |
 | AU-3 | Generate audit records | Enables S3 server access logging to a dedicated log bucket |
 | AU-6 | Support audit review and analysis | Captures Terraform plan and state output as machine-readable evidence |
 | CM-6 | Enforce configuration settings | Applies required compliance tags and enables versioning |
@@ -312,6 +327,104 @@ The failing evidence confirms that a deliberately broken AWS S3 plan was blocked
 
 This proves the policy gate can detect a control violation before infrastructure is merged or deployed.
 
+## Lab 4.3: GRC Evidence Pipeline
+
+Lab 4.3 creates a GitHub Actions based GRC evidence pipeline. The workflow runs on pull requests to `main` and validates infrastructure changes before they are merged.
+
+The pipeline uses AWS OIDC to allow GitHub Actions to assume an AWS IAM role without storing long-lived AWS access keys in GitHub. It then runs Terraform plan, Conftest policy checks, tfsec security scanning, and uploads evidence artifacts for the workflow run.
+
+### Workflow Location
+
+```text
+.github/workflows/grc-gate.yml
+```
+
+### OIDC Terraform Location
+
+```text
+oidc/
+```
+
+### GitHub Repository Variable
+
+```text
+AWS_ROLE_ARN
+```
+
+This variable stores the AWS IAM role ARN used by the GitHub Actions workflow.
+
+### Pipeline Stages
+
+| Stage | Purpose | Evidence Produced |
+|---|---|---|
+| Checkout repository | Pulls the repository content into the workflow runner | Workflow log |
+| Configure AWS credentials through OIDC | Assumes the AWS IAM role without long-lived keys | Workflow log |
+| Setup Terraform | Installs the Terraform version used by the lab | Workflow log |
+| Install Conftest | Installs Conftest for Rego policy evaluation | Workflow log |
+| Install tfsec | Installs tfsec for Terraform static security scanning | Workflow log |
+| Terraform plan | Initializes, validates, and plans the Terraform configuration | `plan.txt`, `plan.json` |
+| Conftest policy gate | Evaluates Terraform plan JSON against AWS Rego policies | `conftest-results.json` |
+| tfsec scan | Scans Terraform code for security findings | `tfsec.sarif` |
+| Upload evidence artifact | Preserves all evidence from the workflow run | `grc-evidence-<run-id>` artifact |
+
+### Evidence Artifact
+
+The workflow uploads an artifact named:
+
+```text
+grc-evidence-<run-id>
+```
+
+The artifact contains:
+
+```text
+conftest-results.json
+plan.json
+plan.txt
+tfsec.sarif
+```
+
+This provides a downloadable evidence package for each workflow run.
+
+### Control Implementation Summary
+
+| Control | Control Objective | Pipeline Implementation |
+|---|---|---|
+| AC-3 | Access enforcement | AWS OIDC role limits CI access to the approved GitHub repository |
+| AU-6 | Audit review and analysis | Workflow logs and uploaded artifacts preserve reviewable evidence |
+| CM-6 | Configuration settings | Terraform and Conftest validate expected configuration before merge |
+| SC-28 | Protection of information at rest | Conftest and tfsec validate encryption expectations |
+| CA-7 | Continuous monitoring | Pull request workflow continuously evaluates changes before merge |
+| SA-10 | Developer configuration management | Pull request checks enforce governance before code is merged |
+
+### Validation Summary
+
+The Lab 4.3 workflow successfully validated:
+
+```text
+AWS OIDC authentication
+Terraform initialization
+Terraform validation
+Terraform plan generation
+Conftest policy evaluation
+tfsec scan execution
+Evidence artifact upload
+Pull request check enforcement
+```
+
+The first run intentionally revealed a tfsec error because the AWS S3 primitive used AES-256 encryption instead of a customer-managed KMS key. The Terraform code was then improved to use an AWS KMS key, which allowed the pipeline to pass successfully.
+
+### Pull Request Outcome
+
+The Lab 4.3 branch was merged through pull request review after the `grc-gate` workflow passed successfully.
+
+```text
+Pull request: #1
+Workflow: grc-gate
+Result: Passed
+Merged into: main
+```
+
 ## Policy Library Summary
 
 The policy library currently supports both GCP and AWS coverage for core compliance controls.
@@ -326,9 +439,9 @@ The policy library currently supports both GCP and AWS coverage for core complia
 
 This repository demonstrates a shift from manual compliance evidence to automated, machine-readable evidence.
 
-Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, and Conftest gate outputs to create evidence that is more repeatable, verifiable, and resistant to silent modification.
+Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, and workflow artifacts to create evidence that is more repeatable, verifiable, and resistant to silent modification.
 
-The evidence approach in this repository is based on three principles:
+The evidence approach in this repository is based on four principles:
 
 | Principle | Meaning |
 |---|---|
@@ -346,11 +459,18 @@ This portfolio uses:
 - Google Cloud CLI
 - AWS S3
 - AWS S3 Object Lock
+- AWS IAM
+- AWS OIDC
+- AWS KMS
 - Google Cloud Storage
 - Google Cloud KMS
 - Open Policy Agent
 - Rego
 - Conftest
+- tfsec
+- SARIF
+- GitHub Actions
+- GitHub CLI
 - Git Bash
 - PowerShell
 - Git
@@ -373,7 +493,13 @@ This repository demonstrates the ability to:
 - Evaluate Terraform plan JSON before deployment
 - Extend policy coverage across cloud providers
 - Use Conftest as a fail-closed policy gate
+- Integrate policy-as-code checks into GitHub Actions
+- Configure AWS OIDC for keyless CI authentication
+- Run static Terraform security scanning with tfsec
+- Generate SARIF security scan evidence
+- Upload workflow evidence artifacts for audit review
 - Capture pass and fail evidence for CI and audit workflows
+- Remediate pipeline findings by improving Terraform controls
 - Structure technical artifacts for audit readiness
 - Maintain a clean GitHub portfolio repository without exposing local state or secrets
 
@@ -411,11 +537,15 @@ This helps prevent accidental exposure of Terraform state, local variable files,
 | OPA unit tests | Complete |
 | Conftest policy gate | Complete |
 | Pass and fail policy evidence | Complete |
+| AWS OIDC GitHub Actions role | Complete |
+| GitHub Actions GRC evidence pipeline | Complete |
+| Terraform plan workflow evidence | Complete |
+| tfsec SARIF evidence | Complete |
 | Machine-readable evidence artifacts | Complete |
-| GitHub portfolio structure | In progress |
+| GitHub portfolio structure | Complete through Lab 4.3 |
 
 ## Next Steps
 
-Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including CI-based policy enforcement, automated control checks, signing, evidence packaging, workflow integration, and OSCAL-aligned evidence references.
+Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing, evidence packaging, workflow integration, and OSCAL-aligned evidence references.
 
 The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, and supported by durable evidence artifacts.
