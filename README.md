@@ -1,6 +1,6 @@
 # CGE-P Capstone Portfolio
 
-This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
+This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, AWS security services baselines, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
 
 The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, enforcing compliance checks through automated pipelines, and preserving signed evidence with verifiable chain of custody.
 
@@ -23,8 +23,11 @@ This repository focuses on the intersection of:
 - Cross-cloud compliance validation
 - GitHub Actions evidence pipelines
 - AWS OIDC authentication for CI workflows
+- AWS security services baselines
+- CloudTrail audit logging
+- Security Hub standards monitoring
 
-The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, and version-controlled technical artifacts.
+The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, AWS security services, and version-controlled technical artifacts.
 
 ## Repository Structure
 
@@ -48,10 +51,21 @@ cgep-capstone/
 │   ├── lab-3-4/
 │   │   ├── conftest-pass.json
 │   │   └── conftest-fail.json
-│   └── lab-4-4/
-│       ├── receipt.json
-│       ├── vault-listing.txt
-│       └── verification-output.txt
+│   ├── lab-4-4/
+│   │   ├── receipt.json
+│   │   ├── vault-listing.txt
+│   │   └── verification-output.txt
+│   └── lab-5-2/
+│       ├── chain-receipt.json
+│       ├── chain-verification-output.txt
+│       ├── cloudtrail-status.json
+│       ├── enabled-standards.json
+│       ├── security-hub-describe.json
+│       ├── security-hub-findings.json
+│       ├── security-hub-findings-summary.json
+│       ├── security-hub-status-note.md
+│       ├── terraform-outputs.json
+│       └── vault-listing.txt
 ├── oidc/
 │   ├── .terraform.lock.hcl
 │   ├── README.md
@@ -75,29 +89,38 @@ cgep-capstone/
 │   ├── policy-gate.sh
 │   └── verify-evidence.sh
 ├── terraform/
+│   ├── baselines/
+│   │   └── aws/
+│   │       ├── .terraform.lock.hcl
+│   │       ├── README.md
+│   │       ├── cloudtrail.tf
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── security_hub.tf
+│   │       └── variables.tf
 │   ├── lab-3-3/
-│   │   ├── main.tf
-│   │   └── .terraform.lock.hcl
+│   │   ├── .terraform.lock.hcl
+│   │   └── main.tf
 │   ├── modules/
 │   │   └── compliant-gcs-bucket/
+│   │       ├── README.md
 │   │       ├── main.tf
-│   │       ├── variables.tf
 │   │       ├── outputs.tf
-│   │       └── README.md
+│   │       └── variables.tf
 │   └── primitives/
 │       ├── compliant-s3/
+│       │   ├── README.md
 │       │   ├── main.tf
-│       │   ├── variables.tf
 │       │   ├── outputs.tf
-│       │   └── README.md
+│       │   └── variables.tf
 │       ├── compliant-gcs/
-│       │   ├── main.tf
-│       │   └── README.md
+│       │   ├── README.md
+│       │   └── main.tf
 │       └── evidence-vault/
+│           ├── README.md
 │           ├── main.tf
-│           ├── variables.tf
 │           ├── outputs.tf
-│           └── README.md
+│           └── variables.tf
 ├── .gitignore
 └── README.md
 ```
@@ -113,6 +136,7 @@ cgep-capstone/
 | Lab 3.4 | Integrating PaC with Terraform via Conftest, AWS | Conftest Policy Gate | Complete |
 | Lab 4.3 | GRC Evidence Pipeline | GitHub Actions, AWS OIDC, Terraform Plan, Conftest, tfsec, Evidence Artifacts | Complete |
 | Lab 4.4 | Evidence Management and Chain of Custody | Cosign Signing, S3 Vault Upload, Receipt Generation, Chain Verification | Complete |
+| Lab 5.2 | AWS Security Services Baseline | CloudTrail, Security Hub, Enabled Standards, AWS Config Status Evidence, Signed Evidence Verification | Complete |
 
 ## Lab 2.3: Building Your First Compliant Resource, AWS S3
 
@@ -338,7 +362,7 @@ This proves the policy gate can detect a control violation before infrastructure
 
 ## Lab 4.3: GRC Evidence Pipeline
 
-Lab 4.3 creates a GitHub Actions based GRC evidence pipeline. The workflow runs on pull requests to `main` and validates infrastructure changes before they are merged.
+Lab 4.3 creates a GitHub Actions GRC evidence pipeline. The workflow runs on pull requests to `main` and validates infrastructure changes before they are merged.
 
 The pipeline uses AWS OIDC to allow GitHub Actions to assume an AWS IAM role without storing long-lived AWS access keys in GitHub. It then runs Terraform plan, Conftest policy checks, tfsec security scanning, and uploads evidence artifacts for the workflow run.
 
@@ -424,8 +448,6 @@ Pull request check enforcement
 The first run intentionally revealed a tfsec error because the AWS S3 primitive used AES-256 encryption instead of a customer-managed KMS key. The Terraform code was then improved to use an AWS KMS key, which allowed the pipeline to pass successfully.
 
 ### Pull Request Outcome
-
-The Lab 4.3 branch was merged through pull request review after the `grc-gate` workflow passed successfully.
 
 ```text
 Pull request: #1
@@ -524,14 +546,119 @@ Verified OK
 CHAIN INTACT for run 25998459489
 ```
 
-This confirms the evidence bundle was successfully signed, uploaded, retained, and verified.
-
 ### Pull Request Outcome
-
-The Lab 4.4 branch was merged through pull request review after the `grc-gate` workflow passed successfully and the verification evidence was captured.
 
 ```text
 Pull request: #2
+Workflow: grc-gate
+Result: Passed
+Merged into: main
+```
+
+## Lab 5.2: AWS Security Services Baseline
+
+Lab 5.2 deploys an AWS-native security services baseline using Terraform. The baseline enables centralized AWS security visibility through CloudTrail and Security Hub, then captures machine-readable evidence for audit and compliance review.
+
+The lab demonstrates how GRC Engineering can move beyond manual screenshots by provisioning security services as code, validating deployment state, capturing AWS service evidence, and preserving signed workflow evidence in an immutable evidence vault.
+
+### Baseline Location
+
+```text
+terraform/baselines/aws/
+```
+
+### Services Enabled
+
+| Service | Purpose |
+|---|---|
+| AWS CloudTrail | Captures account-level management activity and supports audit logging |
+| Amazon S3 | Stores CloudTrail logs with encryption, versioning, and public access blocking |
+| AWS Security Hub | Aggregates security findings and enables security standards monitoring |
+| Security Hub NIST 800-53 Rev 5 | Provides control-aligned security checks |
+| AWS Foundational Security Best Practices | Provides AWS security baseline checks |
+
+### Control Mapping
+
+| Service | Controls | Evidence Value |
+|---|---|---|
+| CloudTrail | AU-2, AU-10, AU-12 | Management event logging and log file validation |
+| S3 | AU-9, SC-28, AC-3 | Protected log storage with encryption, versioning, and blocked public access |
+| Security Hub | RA-5, SI-4, CA-7 | Security findings aggregation and continuous monitoring |
+| Terraform | CM-6, SA-10 | Configuration baseline defined and version-controlled as code |
+
+### Terraform Resources
+
+The baseline creates:
+
+```text
+aws_cloudtrail.mgmt
+aws_s3_bucket.trail
+aws_s3_bucket_policy.trail
+aws_s3_bucket_public_access_block.trail
+aws_s3_bucket_server_side_encryption_configuration.trail
+aws_s3_bucket_versioning.trail
+aws_securityhub_account.this
+aws_securityhub_standards_subscription.fsbp
+aws_securityhub_standards_subscription.nist_800_53
+random_id.suffix
+```
+
+### Security Hub Status
+
+Security Hub was enabled successfully with the following standards:
+
+```text
+NIST 800-53 Rev 5
+AWS Foundational Security Best Practices
+```
+
+The enabled standards returned `INCOMPLETE` with this reason:
+
+```text
+NO_AVAILABLE_CONFIGURATION_RECORDER
+```
+
+This means AWS Config is not currently enabled or available in the account. The condition was documented as evidence because Security Hub standards can depend on AWS Config for control evaluation.
+
+### Evidence Artifacts
+
+```text
+evidence/lab-5-2/cloudtrail-status.json
+evidence/lab-5-2/enabled-standards.json
+evidence/lab-5-2/security-hub-describe.json
+evidence/lab-5-2/security-hub-findings.json
+evidence/lab-5-2/security-hub-findings-summary.json
+evidence/lab-5-2/security-hub-status-note.md
+evidence/lab-5-2/terraform-outputs.json
+```
+
+### Signed Evidence Verification
+
+The Lab 5.2 workflow evidence was bundled, signed with Cosign, uploaded to the immutable S3 evidence vault, and independently verified.
+
+```text
+evidence/lab-5-2/chain-receipt.json
+evidence/lab-5-2/vault-listing.txt
+evidence/lab-5-2/chain-verification-output.txt
+```
+
+Verification result:
+
+```text
+=== 1. Integrity (SHA-256) ===
+  OK (5ec4e2306e0c6ea83c90607142b1b0ace4d011ea669c59457e80fdc107894543)
+=== 2. Authenticity + timestamp (Cosign + Sigstore Rekor) ===
+Verified OK
+  OK (Cosign verified)
+=== 3. Preservation (Object Lock retention) ===
+  OK (retain until 2026-05-18T19:29:32.965000+00:00)
+CHAIN INTACT for run 26000498077
+```
+
+### Pull Request Outcome
+
+```text
+Pull request: #3
 Workflow: grc-gate
 Result: Passed
 Merged into: main
@@ -551,7 +678,7 @@ The policy library currently supports both GCP and AWS coverage for core complia
 
 This repository demonstrates a shift from manual compliance evidence to automated, machine-readable, cryptographically verifiable evidence.
 
-Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore/Rekor transparency records, and S3 Object Lock retention to create evidence that is more repeatable, verifiable, and resistant to silent modification.
+Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore and Rekor transparency records, S3 Object Lock retention, CloudTrail service status, Security Hub enabled standards, and AWS service evidence files to create evidence that is more repeatable, verifiable, and resistant to silent modification.
 
 The evidence approach in this repository is based on five principles:
 
@@ -575,6 +702,8 @@ This portfolio uses:
 - AWS IAM
 - AWS OIDC
 - AWS KMS
+- AWS CloudTrail
+- AWS Security Hub
 - Google Cloud Storage
 - Google Cloud KMS
 - Open Policy Agent
@@ -620,6 +749,12 @@ This repository demonstrates the ability to:
 - Verify evidence integrity using SHA-256
 - Verify evidence authenticity using Cosign and GitHub OIDC
 - Verify preservation using S3 Object Lock retention metadata
+- Build AWS security service baselines with Terraform
+- Enable CloudTrail audit logging through code
+- Enable Security Hub and security standards through code
+- Capture CloudTrail status as evidence
+- Capture Security Hub hub status, enabled standards, and findings as evidence
+- Document AWS Config dependency status for Security Hub standards
 - Capture pass and fail evidence for CI and audit workflows
 - Remediate pipeline findings by improving Terraform controls
 - Structure technical artifacts for audit readiness
@@ -670,10 +805,15 @@ This helps prevent accidental exposure of Terraform state, local variable files,
 | Evidence receipt generation | Complete |
 | Chain-of-custody verification script | Complete |
 | Lab 4.4 verification evidence | Complete |
-| GitHub portfolio structure | Complete through Lab 4.4 |
+| AWS security services baseline | Complete |
+| CloudTrail baseline evidence | Complete |
+| Security Hub enabled standards evidence | Complete |
+| AWS Config status documentation | Complete |
+| Lab 5.2 signed evidence verification | Complete |
+| GitHub portfolio structure | Complete through Lab 5.2 |
 
 ## Next Steps
 
-Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing improvements, evidence packaging, workflow integration, OSCAL-aligned evidence references, and stronger audit traceability.
+Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing improvements, evidence packaging, workflow integration, OSCAL-aligned evidence references, cloud security service integrations, and stronger audit traceability.
 
 The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, preserved when evaluated, signed when captured, and supported by durable evidence artifacts that can be independently verified.
