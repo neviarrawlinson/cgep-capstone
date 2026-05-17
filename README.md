@@ -1,8 +1,8 @@
 # CGE-P Capstone Portfolio
 
-This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, and CI/CD evidence pipeline work completed as part of the GRC Engineering Academy CGE-P certification.
+This repository contains hands-on lab work, infrastructure-as-code artifacts, compliance evidence, policy-as-code controls, automation scripts, CI/CD evidence pipeline work, and chain-of-custody validation completed as part of the GRC Engineering Academy CGE-P certification.
 
-The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, and enforcing compliance checks through automated pipelines.
+The purpose of this capstone portfolio is to demonstrate practical GRC Engineering skills by translating compliance requirements into technical controls, deploying secure cloud resources with Terraform, writing policy-as-code rules, producing machine-readable evidence, enforcing compliance checks through automated pipelines, and preserving signed evidence with verifiable chain of custody.
 
 ## Overview
 
@@ -16,12 +16,15 @@ This repository focuses on the intersection of:
 - Evidence automation
 - Machine-readable audit artifacts
 - Secure evidence storage
+- Immutable evidence vaulting
+- Cryptographic evidence signing
+- Chain-of-custody verification
 - CI-ready policy gates
 - Cross-cloud compliance validation
 - GitHub Actions evidence pipelines
 - AWS OIDC authentication for CI workflows
 
-The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, and version-controlled technical artifacts.
+The labs in this repository show how compliance expectations can be embedded directly into cloud infrastructure, Terraform modules, Rego policies, Conftest gates, evidence workflows, GitHub Actions, signed evidence bundles, and version-controlled technical artifacts.
 
 ## Repository Structure
 
@@ -42,9 +45,13 @@ cgep-capstone/
 │   │   └── receipt.json
 │   ├── lab-3-3/
 │   │   └── opa-test-results.json
-│   └── lab-3-4/
-│       ├── conftest-pass.json
-│       └── conftest-fail.json
+│   ├── lab-3-4/
+│   │   ├── conftest-pass.json
+│   │   └── conftest-fail.json
+│   └── lab-4-4/
+│       ├── receipt.json
+│       ├── vault-listing.txt
+│       └── verification-output.txt
 ├── oidc/
 │   ├── .terraform.lock.hcl
 │   ├── README.md
@@ -65,7 +72,8 @@ cgep-capstone/
 │       └── sc28_encryption_test.rego
 ├── scripts/
 │   ├── capture-evidence.sh
-│   └── policy-gate.sh
+│   ├── policy-gate.sh
+│   └── verify-evidence.sh
 ├── terraform/
 │   ├── lab-3-3/
 │   │   ├── main.tf
@@ -104,6 +112,7 @@ cgep-capstone/
 | Lab 3.3 | Writing Compliance Policies in Rego, GCP | OPA and Rego Policy as Code | Complete |
 | Lab 3.4 | Integrating PaC with Terraform via Conftest, AWS | Conftest Policy Gate | Complete |
 | Lab 4.3 | GRC Evidence Pipeline | GitHub Actions, AWS OIDC, Terraform Plan, Conftest, tfsec, Evidence Artifacts | Complete |
+| Lab 4.4 | Evidence Management and Chain of Custody | Cosign Signing, S3 Vault Upload, Receipt Generation, Chain Verification | Complete |
 
 ## Lab 2.3: Building Your First Compliant Resource, AWS S3
 
@@ -425,6 +434,109 @@ Result: Passed
 Merged into: main
 ```
 
+## Lab 4.4: Evidence Management and Chain of Custody
+
+Lab 4.4 extends the GRC evidence pipeline by adding signed evidence bundles, immutable vault storage, and end-to-end chain-of-custody verification.
+
+The lab connects the GitHub Actions evidence pipeline from Lab 4.3 with the immutable S3 evidence vault from Lab 2.5. Evidence is bundled, hashed, signed with Cosign using GitHub OIDC, uploaded to the S3 vault, and verified using a local chain-of-custody script.
+
+### Chain of Custody Properties
+
+| Property | Evidence Mechanism |
+|---|---|
+| Authenticity | Cosign keyless signature tied to GitHub OIDC |
+| Integrity | SHA-256 hash sidecar for the evidence bundle |
+| Timeliness | Sigstore and Rekor timestamped signature bundle |
+| Preservation | S3 Object Lock retention on vault objects |
+| Completeness | Receipt file records run ID, commit SHA, bundle key, version ID, and hash |
+
+### Workflow Enhancements
+
+The GitHub Actions workflow now performs the following additional steps:
+
+```text
+Install Cosign
+Bundle evidence files
+Generate SHA-256 hash
+Sign evidence bundle with Cosign
+Upload bundle, hash, signature bundle, and receipt to S3 vault
+Upload evidence artifact to GitHub Actions
+Evaluate final gate outcome after evidence is preserved
+```
+
+### Verification Script
+
+```text
+scripts/verify-evidence.sh
+```
+
+The verification script performs three checks:
+
+```text
+1. Recomputes SHA-256 and compares it to the stored hash
+2. Verifies the Cosign signature bundle and OIDC issuer
+3. Confirms S3 Object Lock retention is still active
+```
+
+### Evidence Files in S3 Vault
+
+The Lab 4.4 run uploaded the following files to the S3 evidence vault:
+
+```text
+evidence-25998459489-d0b1a4dad6254e8c7734546fc36958dca7b6d93e.tar.gz
+evidence-25998459489-d0b1a4dad6254e8c7734546fc36958dca7b6d93e.tar.gz.sha256
+evidence-25998459489-d0b1a4dad6254e8c7734546fc36958dca7b6d93e.tar.gz.sig.bundle
+receipt.json
+```
+
+### Evidence Artifacts
+
+```text
+evidence/lab-4-4/receipt.json
+evidence/lab-4-4/vault-listing.txt
+evidence/lab-4-4/verification-output.txt
+```
+
+### Receipt Summary
+
+The receipt records:
+
+```text
+run_id
+vault
+bundle_key
+version_id
+sha256
+commit
+workflow
+```
+
+### Validation Result
+
+```text
+=== 1. Integrity (SHA-256) ===
+  OK (ae781255829a620576138e3c77655472b04806d48a42f5d90284404d1ff0404c)
+=== 2. Authenticity + timestamp (Cosign + Sigstore Rekor) ===
+Verified OK
+  OK (Cosign verified)
+=== 3. Preservation (Object Lock retention) ===
+  OK (retain until 2026-05-18T18:00:14.421000+00:00)
+CHAIN INTACT for run 25998459489
+```
+
+This confirms the evidence bundle was successfully signed, uploaded, retained, and verified.
+
+### Pull Request Outcome
+
+The Lab 4.4 branch was merged through pull request review after the `grc-gate` workflow passed successfully and the verification evidence was captured.
+
+```text
+Pull request: #2
+Workflow: grc-gate
+Result: Passed
+Merged into: main
+```
+
 ## Policy Library Summary
 
 The policy library currently supports both GCP and AWS coverage for core compliance controls.
@@ -437,11 +549,11 @@ The policy library currently supports both GCP and AWS coverage for core complia
 
 ## Evidence Philosophy
 
-This repository demonstrates a shift from manual compliance evidence to automated, machine-readable evidence.
+This repository demonstrates a shift from manual compliance evidence to automated, machine-readable, cryptographically verifiable evidence.
 
-Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, and workflow artifacts to create evidence that is more repeatable, verifiable, and resistant to silent modification.
+Traditional evidence often depends on screenshots, manual exports, and point-in-time visual proof. This portfolio uses Terraform plans, Terraform state, module outputs, JSON attestations, hashes, object versioning, retention-protected storage, OPA test results, Conftest gate outputs, tfsec SARIF files, GitHub Actions logs, workflow artifacts, Cosign signatures, Sigstore/Rekor transparency records, and S3 Object Lock retention to create evidence that is more repeatable, verifiable, and resistant to silent modification.
 
-The evidence approach in this repository is based on four principles:
+The evidence approach in this repository is based on five principles:
 
 | Principle | Meaning |
 |---|---|
@@ -449,6 +561,7 @@ The evidence approach in this repository is based on four principles:
 | Attribution | Evidence should show where it came from and what produced it |
 | Reproducibility | Evidence should allow reviewers to understand how the result was generated |
 | Enforceability | Evidence should show that controls can block non-compliant changes before deployment |
+| Verifiability | Evidence should be independently checked using hashes, signatures, receipts, and retention metadata |
 
 ## Tools and Technologies
 
@@ -469,6 +582,9 @@ This portfolio uses:
 - Conftest
 - tfsec
 - SARIF
+- Cosign
+- Sigstore
+- Rekor
 - GitHub Actions
 - GitHub CLI
 - Git Bash
@@ -498,6 +614,12 @@ This repository demonstrates the ability to:
 - Run static Terraform security scanning with tfsec
 - Generate SARIF security scan evidence
 - Upload workflow evidence artifacts for audit review
+- Sign evidence bundles using Cosign keyless signing
+- Upload signed evidence bundles to an immutable S3 vault
+- Generate evidence receipts with run ID, commit, bundle key, VersionId, and SHA-256 hash
+- Verify evidence integrity using SHA-256
+- Verify evidence authenticity using Cosign and GitHub OIDC
+- Verify preservation using S3 Object Lock retention metadata
 - Capture pass and fail evidence for CI and audit workflows
 - Remediate pipeline findings by improving Terraform controls
 - Structure technical artifacts for audit readiness
@@ -519,9 +641,10 @@ crash.*.log
 .aws/
 *.pem
 *.key
+evidence-run-*/
 ```
 
-This helps prevent accidental exposure of Terraform state, local variable files, credentials, private keys, or environment-specific configuration.
+This helps prevent accidental exposure of Terraform state, local variable files, credentials, private keys, local plan files, downloaded workflow artifacts, or environment-specific configuration.
 
 ## Current Status
 
@@ -542,10 +665,15 @@ This helps prevent accidental exposure of Terraform state, local variable files,
 | Terraform plan workflow evidence | Complete |
 | tfsec SARIF evidence | Complete |
 | Machine-readable evidence artifacts | Complete |
-| GitHub portfolio structure | Complete through Lab 4.3 |
+| Cosign signed evidence bundle | Complete |
+| S3 vault signed evidence upload | Complete |
+| Evidence receipt generation | Complete |
+| Chain-of-custody verification script | Complete |
+| Lab 4.4 verification evidence | Complete |
+| GitHub portfolio structure | Complete through Lab 4.4 |
 
 ## Next Steps
 
-Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing, evidence packaging, workflow integration, and OSCAL-aligned evidence references.
+Future labs will continue expanding this capstone repository with additional compliance engineering capabilities, including enhanced CI-based enforcement, automated control checks, evidence signing improvements, evidence packaging, workflow integration, OSCAL-aligned evidence references, and stronger audit traceability.
 
-The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, and supported by durable evidence artifacts.
+The long-term goal of this repository is to demonstrate a complete GRC Engineering workflow where compliant infrastructure is deployed through code, validated automatically, blocked when non-compliant, preserved when evaluated, signed when captured, and supported by durable evidence artifacts that can be independently verified.
